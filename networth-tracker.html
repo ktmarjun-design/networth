@@ -57,7 +57,7 @@
   .btn:hover{filter:brightness(1.05)}
   .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
   .catcard{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
-  .catcard>.head{display:flex;align-items:center;gap:11px;padding:14px 16px;cursor:pointer}
+  .catcard>.head{display:flex;align-items:center;gap:11px;padding:14px 16px;cursor:pointer;flex-wrap:wrap}
   .catcard .head .sw{width:9px;height:22px;border-radius:4px}.catcard .head .nm{font-weight:700}
   .catcard .head .src{font-size:11px;color:var(--muted);padding:2px 8px;border-radius:20px;background:#f1f1f4}
   .catcard .head .src.auto{background:var(--accent-soft);color:var(--accent)}
@@ -131,12 +131,13 @@
     <div id="catCards"></div>
     <div class="footnote">
       <b>How value is computed</b><br>
-      &bull; <b>Mutual Fund / SIF</b> &mdash; Name &middot; Qty &middot; NAV (auto, AMFI via <code>mfapi.in</code>) &rarr; Qty &times; NAV<br>
+      &bull; <b>Mutual Fund</b> &mdash; Name &middot; Qty &middot; NAV (auto, AMFI via <code>mfapi.in</code>) &rarr; Qty &times; NAV<br>
+      &bull; <b>SIF</b> &mdash; Name &middot; Qty &middot; NAV (auto, AMFI <code>NAVAll.txt</code> via relay; type the NAV if your SIF isn&rsquo;t in the feed yet) &rarr; Qty &times; NAV<br>
       &bull; <b>Shares</b> &mdash; Name &middot; Qty &middot; Price (auto, NSE/BSE via relay) &rarr; Qty &times; Price<br>
       &bull; <b>NPS</b> &mdash; Name &middot; Qty &middot; NAV (auto, <code>npsnav.in</code>) &rarr; Qty &times; NAV<br>
       &bull; <b>GIFT City</b> &mdash; Name &middot; Qty &middot; NAV (USD) + optional NAV-page URL. If a URL is set, the app reads the latest USD NAV from that page via a relay (best-effort); else it uses your typed NAV. &rarr; Qty &times; NAV(USD) &times; live USD&ndash;INR.<br>
       &bull; <b>FD / Savings / Insurance / Others</b> &mdash; Name &middot; Qty &middot; Value (&#8377;) &rarr; Value as-is.<br>
-      Data is stored in this browser only &mdash; use <b>Backup</b> to move it to another device. Auto-refresh runs on open and at 9 AM if left open.
+      Each category shows its latest NAV / last-traded date next to the category name. Data is stored in this browser only &mdash; use <b>Backup</b> to move it to another device. Auto-refresh runs on open and at 9 AM if left open.
     </div>
   </section>
 </div>
@@ -151,7 +152,7 @@
 const CATS=[
   {key:'mutual_fund',label:'Mutual Fund',color:'var(--c1)',kind:'auto',src:'mf',f1:'Fund name',f2:'Quantity',f3:'NAV'},
   {key:'shares',label:'Shares',color:'var(--c2)',kind:'auto',src:'stock',f1:'Share name',f2:'Quantity',f3:'Price'},
-  {key:'sif',label:'SIF',color:'var(--c3)',kind:'auto',src:'mf',f1:'Fund name',f2:'Quantity',f3:'NAV'},
+  {key:'sif',label:'SIF',color:'var(--c3)',kind:'auto',src:'sif',f1:'Fund name',f2:'Quantity',f3:'NAV'},
   {key:'fd',label:'FD',color:'var(--c4)',kind:'flat',f1:'Bank name',f2:'Quantity',f3:'Value'},
   {key:'nps',label:'NPS',color:'var(--c5)',kind:'auto',src:'nps',f1:'Scheme name',f2:'Quantity',f3:'NAV'},
   {key:'savings',label:'Savings',color:'var(--c6)',kind:'flat',f1:'Name',f2:'Quantity',f3:'Value'},
@@ -230,7 +231,10 @@ function renderSettings(){
       else sub='<small>'+fmtN(h.qty||0)+' \u00d7 '+fmtN(h.nav||0)+(h.navDate?(' \u00b7 '+h.navDate):'')+'</small>';
       return '<div class="hrow"><div class="hn">'+esc(h.name)+sub+'</div><div class="hv">'+fmtINR(valueOf(h))+'</div><button class="iconbtn" title="Edit" onclick="openForm(\''+h.id+'\')">&#9998;</button><button class="iconbtn" title="Delete" onclick="delHolding(\''+h.id+'\')">&#128465;</button></div>';
     }).join(''):'<div class="empty">No '+c.label.toLowerCase()+' added.</div>';
-    return '<div class="catcard"><div class="head" onclick="openForm(null,\''+c.key+'\')"><span class="sw" style="background:'+c.color+'"></span><span class="nm">'+c.label+'</span><span class="src '+(auto?'auto':'')+'">'+(auto?'auto':(c.kind==='gift'?'auto FX':'manual'))+'</span><span class="tot">'+(items.length?fmtINR(tot):'')+'</span></div><div class="body">'+body+'</div></div>';
+    let asOf='';const dd=(items.find(h=>h.navDate)||{}).navDate;
+    if(dd)asOf=(c.key==='shares'?'LTP ':(c.key==='gift'?'NAV(USD) ':'NAV '))+dd;
+    const asOfChip=asOf?'<span class="src" style="background:#f1f1f4;color:#6b7280">'+asOf+'</span>':'';
+    return '<div class="catcard"><div class="head" onclick="openForm(null,\''+c.key+'\')"><span class="sw" style="background:'+c.color+'"></span><span class="nm">'+c.label+'</span><span class="src '+(auto?'auto':'')+'">'+(auto?'auto':(c.kind==='gift'?'auto FX':'manual'))+'</span>'+asOfChip+'<span class="tot">'+(items.length?fmtINR(tot):'')+'</span></div><div class="body">'+body+'</div></div>';
   }).join('');
 }
 
@@ -256,7 +260,12 @@ function buildForm(){
     f1='<label class="fld">'+c.f1+'<div class="suggest"><div class="nrow"><input id="f_search" placeholder="e.g. Reliance, TCS, INFY" oninput="stockSearch(this.value)" autocomplete="off"><select id="f_exch"><option value="NS">NSE</option><option value="BO">BSE</option></select></div><div class="suggbox" id="stbox" style="display:none"></div></div></label><div id="pickedRow">'+cur+'</div>';
     f3='<label class="fld">'+c.f3+' (auto)<input id="f_nav_ro" disabled value="'+(editing&&editing.nav?fmtN(editing.nav):'')+'" placeholder="Fetched automatically"></label>';
     extra='<div class="hint">Pick from suggestions for the right symbol, or type a ticker and choose the exchange. Price updates daily.</div>';
-  }else{ // mf / sif / nps
+  }else if(c.src==='sif'){
+    const cur=editing?'<div class="picked">&#10003; Linked: '+esc(editing.name)+'</div>':'';
+    f1='<label class="fld">'+c.f1+' (search AMFI)<div class="suggest"><input id="f_search" placeholder="e.g. SBI Magnum SIF / Quant SIF" oninput="sifSearch(this.value)" autocomplete="off"><div class="suggbox" id="sifbox" style="display:none"></div></div></label><div id="pickedRow">'+cur+'</div>';
+    f3='<label class="fld">'+c.f3+' (auto if found, else type)<input id="f_navsif" type="number" inputmode="decimal" placeholder="0" value="'+(editing&&editing.nav?editing.nav:'')+'"></label>';
+    extra='<div class="note">SIF NAVs are read from AMFI\u2019s official NAV file. Pick your SIF from the search to auto-update its NAV daily. If it isn\u2019t listed there yet, type the NAV \u2014 you can update it anytime.</div>';
+  }else{ // mf / nps
     const cur=editing?'<div class="picked">&#10003; Linked: '+esc(editing.name)+'</div>':'';
     const oninput=c.src==='nps'?'npsSearch(this.value)':'mfSearch(this.value)',boxid=c.src==='nps'?'npsbox':'mfbox';
     const ph=c.src==='nps'?'e.g. HDFC Pension Fund Scheme E Tier I':(formCat==='sif'?'e.g. Quant SIF / SBI Magnum SIF':'e.g. Parag Parikh Flexi Cap Direct Growth');
@@ -272,6 +281,21 @@ function buildForm(){
 let mfTimer=null;
 function mfSearch(q){const box=document.getElementById('mfbox');clearTimeout(mfTimer);if(!q||q.trim().length<3){box.style.display='none';return;}mfTimer=setTimeout(async()=>{try{const r=await fetch('https://api.mfapi.in/mf/search?q='+encodeURIComponent(q.trim()));const list=await r.json();box.innerHTML=(list||[]).slice(0,25).map(m=>'<div onclick=\'pickMF('+m.schemeCode+','+JSON.stringify(m.schemeName)+')\'>'+esc(m.schemeName)+'</div>').join('')||'<div>No match</div>';box.style.display='block';}catch(e){box.innerHTML='<div>Search failed</div>';box.style.display='block';}},280);}
 function pickMF(code,name){picked={schemeCode:String(code),name};document.getElementById('mfbox').style.display='none';document.getElementById('f_search').value=name;document.getElementById('pickedRow').innerHTML='<div class="picked">&#10003; Selected: '+esc(name)+'</div>';}
+
+/* SIF: read AMFI's official NAV file (NAVAll.txt) via relay, parse + cache for the day */
+let amfiAll=null;
+async function loadAmfiAll(){
+  if(amfiAll)return amfiAll;
+  const today=new Date().toDateString();
+  try{const c=JSON.parse(localStorage.getItem('nw_amfi'));if(c&&c.day===today&&Array.isArray(c.list)&&c.list.length){amfiAll=c.list;return amfiAll;}}catch(e){}
+  const txt=await fetchTextViaProxy('https://www.amfiindia.com/spages/NAVAll.txt');
+  const list=[];txt.split(/\r?\n/).forEach(line=>{const p=line.split(';');if(p.length>=6&&/^\d+$/.test(p[0].trim())){const nav=parseFloat(p[4]);if(isFinite(nav))list.push({code:p[0].trim(),name:p[3].trim(),nav:nav,date:(p[5]||'').trim()});}});
+  if(list.length){amfiAll=list;try{localStorage.setItem('nw_amfi',JSON.stringify({day:today,list:list}));}catch(e){}}
+  return amfiAll||[];
+}
+let sifTimer=null;
+function sifSearch(q){const box=document.getElementById('sifbox');clearTimeout(sifTimer);if(!q||q.trim().length<3){box.style.display='none';return;}box.innerHTML='<div>Loading AMFI data&hellip;</div>';box.style.display='block';sifTimer=setTimeout(async()=>{try{const all=await loadAmfiAll();const ql=q.trim().toLowerCase();const res=all.filter(x=>x.name.toLowerCase().includes(ql)).sort((a,b)=>(/sif/i.test(b.name)?1:0)-(/sif/i.test(a.name)?1:0)).slice(0,25);box.innerHTML=res.length?res.map(x=>'<div onclick=\'pickSIF('+JSON.stringify(x.code)+','+JSON.stringify(x.name)+')\'>'+esc(x.name)+'</div>').join(''):'<div>No match in AMFI feed &mdash; type the NAV below instead</div>';}catch(e){box.innerHTML='<div>AMFI fetch failed &mdash; type the NAV below instead</div>';}box.style.display='block';},300);}
+function pickSIF(code,name){picked={schemeCode:String(code),name};document.getElementById('sifbox').style.display='none';document.getElementById('f_search').value=name;document.getElementById('pickedRow').innerHTML='<div class="picked">&#10003; Selected: '+esc(name)+'</div>';}
 async function loadNpsSchemes(){if(npsSchemes)return;try{const r=await fetch('https://npsnav.in/api/schemes');const j=await r.json();npsSchemes=(j.data||[]).map(a=>({code:a[0],name:a[1]}));}catch(e){npsSchemes=[];}}
 function npsSearch(q){const box=document.getElementById('npsbox');if(!npsSchemes){box.innerHTML='<div>Loading&hellip;</div>';box.style.display='block';loadNpsSchemes().then(()=>npsSearch(q));return;}q=(q||'').trim().toLowerCase();if(q.length<2){box.style.display='none';return;}const res=npsSchemes.filter(s=>s.name.toLowerCase().includes(q)).slice(0,25);box.innerHTML=res.map(s=>'<div onclick=\'pickNPS('+JSON.stringify(s.code)+','+JSON.stringify(s.name)+')\'>'+esc(s.name)+'</div>').join('')||'<div>No match</div>';box.style.display='block';}
 function pickNPS(code,name){picked={schemeCode:code,name};document.getElementById('npsbox').style.display='none';document.getElementById('f_search').value=name;document.getElementById('pickedRow').innerHTML='<div class="picked">&#10003; Selected: '+esc(name)+'</div>';}
@@ -284,6 +308,7 @@ function saveForm(){
   if(c.kind==='flat'){h.name=(document.getElementById('f_name').value||'').trim();h.amount=+document.getElementById('f_amount').value||0;if(!h.name){alert('Please enter a name.');return;}}
   else if(c.kind==='gift'){h.name=(document.getElementById('f_name').value||'').trim();h.navUSD=+document.getElementById('f_navusd').value||0;h.navUrl=(document.getElementById('f_navurl').value||'').trim();if(!h.name){alert('Please enter a fund name.');return;}}
   else if(c.src==='stock'){if(picked){h.symbol=picked.symbol;h.name=picked.name;h.exchange=picked.exchange;}else{const raw=(document.getElementById('f_search').value||'').trim().toUpperCase(),ex=document.getElementById('f_exch').value;if(!raw){alert('Search and pick a stock, or type a ticker.');return;}h.symbol=/\.(NS|BO)$/.test(raw)?raw:raw+'.'+ex;h.exchange=ex;h.name=editing?editing.name:raw.replace(/\.(NS|BO)$/,'');}if(h.nav===undefined)h.nav=0;}
+  else if(c.src==='sif'){if(picked){h.schemeCode=picked.schemeCode;h.name=picked.name;}else if(!editing){h.name=(document.getElementById('f_search').value||'').trim();}const mv=+document.getElementById('f_navsif').value;h.nav=(isFinite(mv)&&mv>0)?mv:((editing&&editing.nav)||h.nav||0);if(!h.name){alert('Please search/pick your SIF or type its name.');return;}}
   else{if(picked){h.schemeCode=picked.schemeCode;h.name=picked.name;}if(!h.schemeCode||!h.name){alert('Please search and select a scheme/fund first.');return;}if(h.nav===undefined)h.nav=0;}
   if(editing)holdings=holdings.map(x=>x.id===h.id?h:x);else holdings.push(h);
   save();closeForm();renderSettings();renderDash();
@@ -298,11 +323,12 @@ function restoreData(e){const f=e.target.files&&e.target.files[0];if(!f)return;c
 let refreshing=false;
 async function refreshAll(manual){
   if(refreshing)return;
-  const mf=holdings.filter(h=>(h.cat==='mutual_fund'||h.cat==='sif')&&h.schemeCode);
+  const mf=holdings.filter(h=>h.cat==='mutual_fund'&&h.schemeCode);
+  const sif=holdings.filter(h=>h.cat==='sif'&&h.schemeCode);
   const nps=holdings.filter(h=>h.cat==='nps'&&h.schemeCode);
   const stock=holdings.filter(h=>h.cat==='shares'&&h.symbol);
   const gift=holdings.filter(h=>h.cat==='gift');
-  if(!mf.length&&!nps.length&&!stock.length&&!gift.length){if(manual){meta.lastRefreshAt=Date.now();meta.lastRefreshDay=new Date().toDateString();save();renderDash();}return;}
+  if(!mf.length&&!sif.length&&!nps.length&&!stock.length&&!gift.length){if(manual){meta.lastRefreshAt=Date.now();meta.lastRefreshDay=new Date().toDateString();save();renderDash();}return;}
   refreshing=true;const ic=document.getElementById('refIcon');ic.classList.add('spin');
   if(gift.length){
     let ok=false;
@@ -315,6 +341,7 @@ async function refreshAll(manual){
   }
   if(nps.length){try{const r=await fetch('https://npsnav.in/api/latest-min',{cache:'no-store'});const j=await r.json();const map={};(j.data||[]).forEach(a=>map[a[0]]=a[1]);const dt=(j.metadata||{}).lastUpdated||'';nps.forEach(h=>{if(map[h.schemeCode]!=null){h.nav=+map[h.schemeCode];h.navDate=dt;h.navError=false;}else h.navError=true;});}catch(e){nps.forEach(h=>h.navError=true);}}
   await Promise.all(mf.map(async h=>{try{const r=await fetch('https://api.mfapi.in/mf/'+h.schemeCode+'/latest',{cache:'no-store'});const j=await r.json();const d=(j.data&&j.data[0])||null;if(d){h.nav=+d.nav;h.navDate=d.date;h.navError=false;}else h.navError=true;}catch(e){h.navError=true;}}));
+  if(sif.length){try{const all=await loadAmfiAll();const map={};all.forEach(x=>map[x.code]=x);sif.forEach(h=>{const x=map[h.schemeCode];if(x){h.nav=x.nav;h.navDate=x.date;h.navError=false;}else h.navError=true;});}catch(e){sif.forEach(h=>h.navError=true);}}
   await Promise.all(stock.map(async h=>{try{const j=await fetchJSONviaProxy('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(h.symbol)+'?range=1d&interval=1d');const res=j.chart&&j.chart.result&&j.chart.result[0];const m=res&&res.meta;const px=m&&(m.regularMarketPrice!=null?m.regularMarketPrice:m.chartPreviousClose);if(px!=null){h.nav=+px;h.navDate=fmtUnixDate(m.regularMarketTime)||new Date().toLocaleDateString('en-GB');h.navError=false;}else h.navError=true;}catch(e){h.navError=true;}}));
   meta.lastRefreshAt=Date.now();meta.lastRefreshDay=new Date().toDateString();
   save();renderDash();if(document.getElementById('set').style.display!=='none')renderSettings();
@@ -322,7 +349,7 @@ async function refreshAll(manual){
 }
 function maybeAuto(){const today=new Date().toDateString(),h=new Date().getHours();const has=holdings.some(x=>{const c=catOf(x.cat);return (c.kind==='auto'&&(x.schemeCode||x.symbol))||c.kind==='gift';});if(!has)return;if(meta.lastRefreshDay!==today&&h>=9)refreshAll(false);else if(!meta.lastRefreshAt)refreshAll(false);}
 setInterval(()=>{const n=new Date();if(n.getHours()===9&&n.getMinutes()<5&&meta.lastRefreshDay!==n.toDateString())refreshAll(false);},60000);
-document.addEventListener('click',e=>{if(!e.target.closest('.suggest')){['mfbox','npsbox','stbox'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});}});
+document.addEventListener('click',e=>{if(!e.target.closest('.suggest')){['mfbox','npsbox','stbox','sifbox'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});}});
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeForm();});
 renderDash();maybeAuto();
 </script>
