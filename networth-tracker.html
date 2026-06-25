@@ -132,7 +132,7 @@
     <div class="footnote">
       <b>How value is computed</b><br>
       &bull; <b>Mutual Fund</b> &mdash; Name &middot; Qty &middot; NAV (auto, AMFI via <code>mfapi.in</code>) &rarr; Qty &times; NAV<br>
-      &bull; <b>SIF</b> &mdash; Name &middot; Qty &middot; NAV (auto, AMFI <code>NAVAll.txt</code> via relay; type the NAV if your SIF isn&rsquo;t in the feed yet) &rarr; Qty &times; NAV<br>
+      &bull; <b>SIF</b> &mdash; Name &middot; Qty &middot; NAV. Pick your fund from the built-in SIF list (or type it), then enter the NAV from <a href="https://www.amfiindia.com/sif/latest-nav" target="_blank" rel="noopener">AMFI&rsquo;s SIF page</a> &mdash; there is no public daily SIF feed to auto-fetch. &rarr; Qty &times; NAV<br>
       &bull; <b>Shares</b> &mdash; Name &middot; Qty &middot; Price (auto, NSE/BSE via relay) &rarr; Qty &times; Price<br>
       &bull; <b>NPS</b> &mdash; Name &middot; Qty &middot; NAV (auto, <code>npsnav.in</code>) &rarr; Qty &times; NAV<br>
       &bull; <b>GIFT City</b> &mdash; Name &middot; Qty &middot; NAV (USD) + optional NAV-page URL. If a URL is set, the app reads the latest USD NAV from that page via a relay (best-effort); else it uses your typed NAV. &rarr; Qty &times; NAV(USD) &times; live USD&ndash;INR.<br>
@@ -216,7 +216,7 @@ function renderDash(){
     if(c.kind==='flat'){navCell='\u2014';upd='<span class="navdt">manual</span>';}
     else if(c.kind==='gift'){navCell='$'+fmtN(h.navUSD||0);upd=!meta.usdinr?'<span class="navdt err">&#9888; rate pending</span>':(h.navError&&h.navUrl?'<span class="navdt err">&#9888; NAV fetch failed</span>':'<span class="navdt">'+((h.navAuto&&h.navDate)?(h.navDate+' '):'')+'@ \u20B9'+(+meta.usdinr).toFixed(2)+'</span>');}
     else{navCell=fmtN(h.nav||0);upd=h.navError?('<span class="navdt err">&#9888; '+(h.navDate||'\u2014')+'</span>'):'<span class="navdt">'+(h.navDate||'\u2014')+'</span>';}
-    const auto=(c.kind==='auto'||(c.kind==='gift'&&h.navUrl));
+    const auto=((c.kind==='auto'&&h.cat!=='sif')||(c.kind==='gift'&&h.navUrl));
     return '<tr><td><b>'+esc(h.name)+'</b></td><td><span class="tag '+(auto?'':'man')+'">'+c.label+'</span></td><td class="r">'+qtyCell+'</td><td class="r">'+navCell+'</td><td class="r"><b>'+fmtINR(valueOf(h))+'</b></td><td>'+upd+'</td></tr>';
   }).join('');
 }
@@ -224,7 +224,7 @@ function donutSVG(cats,total){const size=150,r=58,cx=75,cy=75,sw=22,C=2*Math.PI*
 
 function renderSettings(){
   document.getElementById('catCards').innerHTML=CATS.map(c=>{
-    const items=holdings.filter(h=>h.cat===c.key),tot=items.reduce((s,h)=>s+valueOf(h),0),auto=(c.kind==='auto');
+    const items=holdings.filter(h=>h.cat===c.key),tot=items.reduce((s,h)=>s+valueOf(h),0),auto=(c.kind==='auto'&&c.key!=='sif');
     const body=items.length?items.map(h=>{let sub;
       if(c.kind==='flat')sub='<small>Qty '+fmtN(h.qty||0)+' \u00b7 Value '+fmtINR(h.amount)+'</small>';
       else if(c.kind==='gift')sub='<small>'+fmtN(h.qty||0)+' \u00d7 $'+fmtN(h.navUSD||0)+' \u00d7 \u20B9'+(meta.usdinr?(+meta.usdinr).toFixed(2):'?')+(h.navUrl?' \u00b7 auto':'')+'</small>';
@@ -261,10 +261,10 @@ function buildForm(){
     f3='<label class="fld">'+c.f3+' (auto)<input id="f_nav_ro" disabled value="'+(editing&&editing.nav?fmtN(editing.nav):'')+'" placeholder="Fetched automatically"></label>';
     extra='<div class="hint">Pick from suggestions for the right symbol, or type a ticker and choose the exchange. Price updates daily.</div>';
   }else if(c.src==='sif'){
-    const cur=editing?'<div class="picked">&#10003; Linked: '+esc(editing.name)+'</div>':'';
-    f1='<label class="fld">'+c.f1+' (search AMFI)<div class="suggest"><input id="f_search" placeholder="e.g. SBI Magnum SIF / Quant SIF" oninput="sifSearch(this.value)" autocomplete="off"><div class="suggbox" id="sifbox" style="display:none"></div></div></label><div id="pickedRow">'+cur+'</div>';
-    f3='<label class="fld">'+c.f3+' (auto if found, else type)<input id="f_navsif" type="number" inputmode="decimal" placeholder="0" value="'+(editing&&editing.nav?editing.nav:'')+'"></label>';
-    extra='<div class="note">SIF NAVs are read from AMFI\u2019s official NAV file. Pick your SIF from the search to auto-update its NAV daily. If it isn\u2019t listed there yet, type the NAV \u2014 you can update it anytime.</div>';
+    const cur=editing?'<div class="picked">&#10003; Selected: '+esc(editing.name)+'</div>':'';
+    f1='<label class="fld">'+c.f1+' (pick or type)<div class="suggest"><input id="f_search" placeholder="e.g. SBI Magnum SIF / Quant SIF" oninput="sifSearch(this.value)" onfocus="sifSearch(this.value)" autocomplete="off"><div class="suggbox" id="sifbox" style="display:none"></div></div></label><div id="pickedRow">'+cur+'</div>';
+    f3='<label class="fld">'+c.f3+' (enter today\u2019s NAV)<input id="f_navsif" type="number" inputmode="decimal" placeholder="0" value="'+(editing&&editing.nav?editing.nav:'')+'"></label>';
+    extra='<div class="note">No public daily-NAV feed exists for SIFs yet, so pick your fund (or type it) and enter today\u2019s NAV from <a href="https://www.amfiindia.com/sif/latest-nav" target="_blank" rel="noopener">AMFI\u2019s SIF NAV page \u2197</a>. Update the NAV whenever you check it \u2014 the date is recorded automatically.</div>';
   }else{ // mf / nps
     const cur=editing?'<div class="picked">&#10003; Linked: '+esc(editing.name)+'</div>':'';
     const oninput=c.src==='nps'?'npsSearch(this.value)':'mfSearch(this.value)',boxid=c.src==='nps'?'npsbox':'mfbox';
@@ -282,20 +282,11 @@ let mfTimer=null;
 function mfSearch(q){const box=document.getElementById('mfbox');clearTimeout(mfTimer);if(!q||q.trim().length<3){box.style.display='none';return;}mfTimer=setTimeout(async()=>{try{const r=await fetch('https://api.mfapi.in/mf/search?q='+encodeURIComponent(q.trim()));const list=await r.json();box.innerHTML=(list||[]).slice(0,25).map(m=>'<div onclick=\'pickMF('+m.schemeCode+','+JSON.stringify(m.schemeName)+')\'>'+esc(m.schemeName)+'</div>').join('')||'<div>No match</div>';box.style.display='block';}catch(e){box.innerHTML='<div>Search failed</div>';box.style.display='block';}},280);}
 function pickMF(code,name){picked={schemeCode:String(code),name};document.getElementById('mfbox').style.display='none';document.getElementById('f_search').value=name;document.getElementById('pickedRow').innerHTML='<div class="picked">&#10003; Selected: '+esc(name)+'</div>';}
 
-/* SIF: read AMFI's official NAV file (NAVAll.txt) via relay, parse + cache for the day */
-let amfiAll=null;
-async function loadAmfiAll(){
-  if(amfiAll)return amfiAll;
-  const today=new Date().toDateString();
-  try{const c=JSON.parse(localStorage.getItem('nw_amfi'));if(c&&c.day===today&&Array.isArray(c.list)&&c.list.length){amfiAll=c.list;return amfiAll;}}catch(e){}
-  const txt=await fetchTextViaProxy('https://www.amfiindia.com/spages/NAVAll.txt');
-  const list=[];txt.split(/\r?\n/).forEach(line=>{const p=line.split(';');if(p.length>=6&&/^\d+$/.test(p[0].trim())){const nav=parseFloat(p[4]);if(isFinite(nav))list.push({code:p[0].trim(),name:p[3].trim(),nav:nav,date:(p[5]||'').trim()});}});
-  if(list.length){amfiAll=list;try{localStorage.setItem('nw_amfi',JSON.stringify({day:today,list:list}));}catch(e){}}
-  return amfiAll||[];
-}
-let sifTimer=null;
-function sifSearch(q){const box=document.getElementById('sifbox');clearTimeout(sifTimer);if(!q||q.trim().length<3){box.style.display='none';return;}box.innerHTML='<div>Loading AMFI data&hellip;</div>';box.style.display='block';sifTimer=setTimeout(async()=>{try{const all=await loadAmfiAll();const ql=q.trim().toLowerCase();const res=all.filter(x=>x.name.toLowerCase().includes(ql)).sort((a,b)=>(/sif/i.test(b.name)?1:0)-(/sif/i.test(a.name)?1:0)).slice(0,25);box.innerHTML=res.length?res.map(x=>'<div onclick=\'pickSIF('+JSON.stringify(x.code)+','+JSON.stringify(x.name)+')\'>'+esc(x.name)+'</div>').join(''):'<div>No match in AMFI feed &mdash; type the NAV below instead</div>';}catch(e){box.innerHTML='<div>AMFI fetch failed &mdash; type the NAV below instead</div>';}box.style.display='block';},300);}
-function pickSIF(code,name){picked={schemeCode:String(code),name};document.getElementById('sifbox').style.display='none';document.getElementById('f_search').value=name;document.getElementById('pickedRow').innerHTML='<div class="picked">&#10003; Selected: '+esc(name)+'</div>';}
+/* SIF: no public machine-readable daily-NAV feed exists, so search a built-in fund list and enter NAV manually */
+const SIF_FUNDS=['SBI Magnum Hybrid Long Short Fund','Quant Equity Long Short Fund','Edelweiss Altiva Hybrid Long-Short Fund','Edelweiss Altiva Equity Ex-Top 100 Long-Short Fund','ITI Diviniti SIF','Tata Titanium SIF','Mirae Asset SIF','Kotak SIF','HSBC SIF','Bandhan SIF','ICICI Prudential SIF','Aditya Birla Sun Life SIF','360 ONE SIF','Franklin Templeton SIF','Union SIF','The Wealth Company SIF'];
+function sifSearch(q){const box=document.getElementById('sifbox');if(!box)return;q=(q||'').trim().toLowerCase();const res=SIF_FUNDS.filter(n=>n.toLowerCase().includes(q));let html=res.map(n=>'<div onclick=\'pickSIF('+JSON.stringify(n)+')\'>'+esc(n)+'</div>').join('');html+='<div style="color:#6b7280" onclick="closeSifBox()">&#9998; or type your fund&rsquo;s exact name above</div>';box.innerHTML=html;box.style.display='block';}
+function closeSifBox(){const b=document.getElementById('sifbox');if(b)b.style.display='none';}
+function pickSIF(name){picked={name:name};const b=document.getElementById('sifbox');if(b)b.style.display='none';document.getElementById('f_search').value=name;document.getElementById('pickedRow').innerHTML='<div class="picked">&#10003; Selected: '+esc(name)+'</div>';}
 async function loadNpsSchemes(){if(npsSchemes)return;try{const r=await fetch('https://npsnav.in/api/schemes');const j=await r.json();npsSchemes=(j.data||[]).map(a=>({code:a[0],name:a[1]}));}catch(e){npsSchemes=[];}}
 function npsSearch(q){const box=document.getElementById('npsbox');if(!npsSchemes){box.innerHTML='<div>Loading&hellip;</div>';box.style.display='block';loadNpsSchemes().then(()=>npsSearch(q));return;}q=(q||'').trim().toLowerCase();if(q.length<2){box.style.display='none';return;}const res=npsSchemes.filter(s=>s.name.toLowerCase().includes(q)).slice(0,25);box.innerHTML=res.map(s=>'<div onclick=\'pickNPS('+JSON.stringify(s.code)+','+JSON.stringify(s.name)+')\'>'+esc(s.name)+'</div>').join('')||'<div>No match</div>';box.style.display='block';}
 function pickNPS(code,name){picked={schemeCode:code,name};document.getElementById('npsbox').style.display='none';document.getElementById('f_search').value=name;document.getElementById('pickedRow').innerHTML='<div class="picked">&#10003; Selected: '+esc(name)+'</div>';}
@@ -308,7 +299,7 @@ function saveForm(){
   if(c.kind==='flat'){h.name=(document.getElementById('f_name').value||'').trim();h.amount=+document.getElementById('f_amount').value||0;if(!h.name){alert('Please enter a name.');return;}}
   else if(c.kind==='gift'){h.name=(document.getElementById('f_name').value||'').trim();h.navUSD=+document.getElementById('f_navusd').value||0;h.navUrl=(document.getElementById('f_navurl').value||'').trim();if(!h.name){alert('Please enter a fund name.');return;}}
   else if(c.src==='stock'){if(picked){h.symbol=picked.symbol;h.name=picked.name;h.exchange=picked.exchange;}else{const raw=(document.getElementById('f_search').value||'').trim().toUpperCase(),ex=document.getElementById('f_exch').value;if(!raw){alert('Search and pick a stock, or type a ticker.');return;}h.symbol=/\.(NS|BO)$/.test(raw)?raw:raw+'.'+ex;h.exchange=ex;h.name=editing?editing.name:raw.replace(/\.(NS|BO)$/,'');}if(h.nav===undefined)h.nav=0;}
-  else if(c.src==='sif'){if(picked){h.schemeCode=picked.schemeCode;h.name=picked.name;}else if(!editing){h.name=(document.getElementById('f_search').value||'').trim();}const mv=+document.getElementById('f_navsif').value;h.nav=(isFinite(mv)&&mv>0)?mv:((editing&&editing.nav)||h.nav||0);if(!h.name){alert('Please search/pick your SIF or type its name.');return;}}
+  else if(c.src==='sif'){if(picked&&picked.name){h.name=picked.name;}else if(!editing){h.name=(document.getElementById('f_search').value||'').trim();}const mv=+document.getElementById('f_navsif').value;if(isFinite(mv)&&mv>0){h.nav=mv;h.navDate=new Date().toLocaleDateString('en-GB');}else{h.nav=(editing&&editing.nav)||h.nav||0;}if(!h.name){alert('Please pick your SIF or type its name.');return;}}
   else{if(picked){h.schemeCode=picked.schemeCode;h.name=picked.name;}if(!h.schemeCode||!h.name){alert('Please search and select a scheme/fund first.');return;}if(h.nav===undefined)h.nav=0;}
   if(editing)holdings=holdings.map(x=>x.id===h.id?h:x);else holdings.push(h);
   save();closeForm();renderSettings();renderDash();
@@ -324,11 +315,10 @@ let refreshing=false;
 async function refreshAll(manual){
   if(refreshing)return;
   const mf=holdings.filter(h=>h.cat==='mutual_fund'&&h.schemeCode);
-  const sif=holdings.filter(h=>h.cat==='sif'&&h.schemeCode);
   const nps=holdings.filter(h=>h.cat==='nps'&&h.schemeCode);
   const stock=holdings.filter(h=>h.cat==='shares'&&h.symbol);
   const gift=holdings.filter(h=>h.cat==='gift');
-  if(!mf.length&&!sif.length&&!nps.length&&!stock.length&&!gift.length){if(manual){meta.lastRefreshAt=Date.now();meta.lastRefreshDay=new Date().toDateString();save();renderDash();}return;}
+  if(!mf.length&&!nps.length&&!stock.length&&!gift.length){if(manual){meta.lastRefreshAt=Date.now();meta.lastRefreshDay=new Date().toDateString();save();renderDash();}return;}
   refreshing=true;const ic=document.getElementById('refIcon');ic.classList.add('spin');
   if(gift.length){
     let ok=false;
@@ -341,7 +331,6 @@ async function refreshAll(manual){
   }
   if(nps.length){try{const r=await fetch('https://npsnav.in/api/latest-min',{cache:'no-store'});const j=await r.json();const map={};(j.data||[]).forEach(a=>map[a[0]]=a[1]);const dt=(j.metadata||{}).lastUpdated||'';nps.forEach(h=>{if(map[h.schemeCode]!=null){h.nav=+map[h.schemeCode];h.navDate=dt;h.navError=false;}else h.navError=true;});}catch(e){nps.forEach(h=>h.navError=true);}}
   await Promise.all(mf.map(async h=>{try{const r=await fetch('https://api.mfapi.in/mf/'+h.schemeCode+'/latest',{cache:'no-store'});const j=await r.json();const d=(j.data&&j.data[0])||null;if(d){h.nav=+d.nav;h.navDate=d.date;h.navError=false;}else h.navError=true;}catch(e){h.navError=true;}}));
-  if(sif.length){try{const all=await loadAmfiAll();const map={};all.forEach(x=>map[x.code]=x);sif.forEach(h=>{const x=map[h.schemeCode];if(x){h.nav=x.nav;h.navDate=x.date;h.navError=false;}else h.navError=true;});}catch(e){sif.forEach(h=>h.navError=true);}}
   await Promise.all(stock.map(async h=>{try{const j=await fetchJSONviaProxy('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(h.symbol)+'?range=1d&interval=1d');const res=j.chart&&j.chart.result&&j.chart.result[0];const m=res&&res.meta;const px=m&&(m.regularMarketPrice!=null?m.regularMarketPrice:m.chartPreviousClose);if(px!=null){h.nav=+px;h.navDate=fmtUnixDate(m.regularMarketTime)||new Date().toLocaleDateString('en-GB');h.navError=false;}else h.navError=true;}catch(e){h.navError=true;}}));
   meta.lastRefreshAt=Date.now();meta.lastRefreshDay=new Date().toDateString();
   save();renderDash();if(document.getElementById('set').style.display!=='none')renderSettings();
