@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="theme-color" content="#2f4cdd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Net Worth">
+<title>Net Worth Tracker</title>
+<style>
+  :root{--bg:#f5f6f8;--card:#fff;--ink:#13151a;--muted:#6b7280;--line:#e7e9ee;--accent:#2f4cdd;--accent-soft:#eaeefb;--pos:#0f9d58;--neg:#d23f3f;--c1:#2f4cdd;--c2:#0f9d58;--c3:#e8911a;--c4:#9b51e0;--c5:#19b5c9;--c6:#e15a8f;--c7:#5a6b8c;--c8:#d2603f;--c9:#7a8a3a;--shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;font-size:15px;line-height:1.45}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 16px 96px}
+  header{position:sticky;top:0;z-index:20;background:rgba(245,246,248,.85);backdrop-filter:saturate(150%) blur(8px);border-bottom:1px solid var(--line)}
+  .bar{max-width:1040px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px}
+  .brand{font-weight:700;letter-spacing:-.2px;font-size:17px;display:flex;align-items:center;gap:9px}
+  .dot{width:11px;height:11px;border-radius:3px;background:var(--accent)}
+  nav{margin-left:auto;display:flex;gap:4px;background:#eceef3;padding:4px;border-radius:11px}
+  nav button{border:0;background:transparent;padding:7px 16px;border-radius:8px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
+  nav button.active{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+  .refresh{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;display:flex;gap:7px;align-items:center}
+  .refresh:hover{border-color:#cfd3dc}
+  .spin{display:inline-block;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+  section{padding-top:22px}
+  .hero{background:linear-gradient(135deg,#1f2a52,#2f4cdd);color:#fff;border-radius:18px;padding:24px 26px;box-shadow:var(--shadow);overflow:hidden}
+  .hero .lbl{font-size:13px;opacity:.8;font-weight:600;letter-spacing:.3px}
+  .hero .big{font-size:clamp(30px,7vw,46px);font-weight:800;letter-spacing:-1px;margin:4px 0 2px}
+  .hero .sub{font-size:13px;opacity:.85}
+  .updated{font-size:12px;color:var(--muted);margin:10px 2px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .warn{color:var(--c3)}
+  .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-top:18px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}nav button{padding:7px 11px}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+  .panel h3{margin:0 0 14px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+  .donutwrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .legend{display:flex;flex-direction:column;gap:8px;flex:1;min-width:160px}
+  .leg{display:flex;align-items:center;gap:9px;font-size:13px}.leg .sw{width:11px;height:11px;border-radius:3px;flex:none}
+  .leg .nm{flex:1}.leg .vl{font-weight:600}.leg .pc{color:var(--muted);width:42px;text-align:right}
+  .catlist{display:flex;flex-direction:column}
+  .catrow{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
+  .catrow:last-child{border-bottom:0}.catrow .sw{width:9px;height:24px;border-radius:4px;flex:none}
+  .catrow .nm{font-weight:600}.catrow .ct{color:var(--muted);font-size:12px}
+  .catrow .vl{margin-left:auto;font-weight:700}.catrow .pc{color:var(--muted);font-size:12px;width:46px;text-align:right}
+  table{width:100%;border-collapse:collapse;margin-top:4px}
+  th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);font-size:14px}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+  td.r,th.r{text-align:right}
+  .tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;background:var(--accent-soft);color:var(--accent)}
+  .tag.man{background:#f1f1f4;color:#6b7280}
+  .navdt{color:var(--muted);font-size:12px}.navdt.err{color:var(--c3)}
+  .secthead{display:flex;align-items:center;gap:12px;margin:0 0 6px;flex-wrap:wrap}
+  .secthead h2{font-size:20px;margin:0;letter-spacing:-.3px}
+  .btn{border:0;background:var(--accent);color:#fff;padding:9px 16px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px}
+  .btn:hover{filter:brightness(1.05)}
+  .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+  .catcard{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+  .catcard>.head{display:flex;align-items:center;gap:11px;padding:14px 16px;cursor:pointer}
+  .catcard .head .sw{width:9px;height:22px;border-radius:4px}.catcard .head .nm{font-weight:700}
+  .catcard .head .src{font-size:11px;color:var(--muted);padding:2px 8px;border-radius:20px;background:#f1f1f4}
+  .catcard .head .src.auto{background:var(--accent-soft);color:var(--accent)}
+  .catcard .head .tot{margin-left:auto;font-weight:700}
+  .catcard .body{padding:0 16px 14px}
+  .hrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .hrow .hn{font-weight:600;flex:1;min-width:0}
+  .hrow .hn small{display:block;color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hrow .hv{font-weight:700;text-align:right}
+  .iconbtn{border:1px solid var(--line);background:var(--card);width:30px;height:30px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:14px;display:grid;place-items:center}
+  .iconbtn:hover{color:var(--ink);border-color:#cfd3dc}
+  .empty{color:var(--muted);font-size:13px;padding:10px 0 2px}
+  .overlay{position:fixed;inset:0;background:rgba(16,18,28,.45);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:24px 14px;overflow:auto}
+  .overlay.show{display:flex}
+  .modal{background:var(--card);border-radius:16px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.25);margin-top:40px}
+  .modal .mh{padding:18px 20px;border-bottom:1px solid var(--line);font-weight:700;font-size:16px}
+  .modal .mb{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+  .modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+  label.fld{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#3a3f4b}
+  input,select{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfbfd;width:100%}
+  input:focus,select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  input:disabled{background:#f1f1f4;color:#6b7280}
+  .nrow{display:flex;gap:8px}.nrow select{width:96px;flex:none}
+  .hint{font-size:12px;color:var(--muted);font-weight:500}
+  .suggest{position:relative}
+  .suggbox{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-top:4px;max-height:230px;overflow:auto;z-index:5;box-shadow:var(--shadow)}
+  .suggbox div{padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)}
+  .suggbox div:hover{background:var(--accent-soft)}.suggbox div:last-child{border-bottom:0}
+  .picked{font-size:12px;color:var(--pos);font-weight:600}
+  .note{background:#fff8ec;border:1px solid #f3e2c0;color:#8a6418;font-size:12.5px;padding:10px 12px;border-radius:10px;line-height:1.5}
+  .footnote{font-size:12px;color:var(--muted);margin:26px 2px 0;line-height:1.6}
+  .footnote code{background:#eceef3;padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><span class="dot"></span> Net Worth</div>
+    <nav>
+      <button id="tabDash" class="active" onclick="show('dash')">Dashboard</button>
+      <button id="tabSet" onclick="show('set')">Settings</button>
+    </nav>
+    <button class="refresh" id="refreshBtn" onclick="refreshAll(true)"><span id="refIcon">&#10227;</span> Refresh</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <section id="dash">
+    <div class="hero"><div class="lbl">TOTAL NET WORTH</div><div class="big" id="heroTotal">&#8377;0</div><div class="sub" id="heroSub">Across 0 holdings</div></div>
+    <div class="updated" id="updatedLine"></div>
+    <div class="grid">
+      <div class="panel"><h3>Allocation</h3><div class="donutwrap"><div id="donut"></div><div class="legend" id="legend"></div></div></div>
+      <div class="panel"><h3>By Category</h3><div class="catlist" id="catlist"></div></div>
+    </div>
+    <div class="panel" style="margin-top:18px"><h3>Holdings</h3>
+      <div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Category</th><th class="r">Qty</th><th class="r">NAV / Price</th><th class="r">Value (&#8377;)</th><th>Updated</th></tr></thead><tbody id="holdRows"></tbody></table></div>
+      <div class="empty" id="dashEmpty" style="display:none">No holdings yet. Open <b>Settings</b> to add your funds, shares, FDs and more.</div>
+    </div>
+  </section>
+
+  <section id="set" style="display:none">
+    <div class="secthead"><h2>Settings</h2>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn ghost" onclick="backupData()">Backup</button>
+        <button class="btn ghost" onclick="document.getElementById('restoreFile').click()">Restore</button>
+        <button class="btn" onclick="openForm()">+ Add</button>
+      </div>
+    </div>
+    <input type="file" id="restoreFile" accept="application/json,.json" style="display:none" onchange="restoreData(event)">
+    <div class="hint" style="margin:0 2px 16px">Every category has three fields. Mutual Fund, SIF, NPS &amp; Shares fetch NAV/price automatically. GIFT City can auto-fetch too if you add its fund-house NAV page URL.</div>
+    <div id="catCards"></div>
+    <div class="footnote">
+      <b>How value is computed</b><br>
+      &bull; <b>Mutual Fund / SIF</b> &mdash; Name &middot; Qty &middot; NAV (auto, AMFI via <code>mfapi.in</code>) &rarr; Qty &times; NAV<br>
+      &bull; <b>Shares</b> &mdash; Name &middot; Qty &middot; Price (auto, NSE/BSE via relay) &rarr; Qty &times; Price<br>
+      &bull; <b>NPS</b> &mdash; Name &middot; Qty &middot; NAV (auto, <code>npsnav.in</code>) &rarr; Qty &times; NAV<br>
+      &bull; <b>GIFT City</b> &mdash; Name &middot; Qty &middot; NAV (USD) + optional NAV-page URL. If a URL is set, the app reads the latest USD NAV from that page via a relay (best-effort); else it uses your typed NAV. &rarr; Qty &times; NAV(USD) &times; live USD&ndash;INR.<br>
+      &bull; <b>FD / Savings / Insurance / Others</b> &mdash; Name &middot; Qty &middot; Value (&#8377;) &rarr; Value as-is.<br>
+      Data is stored in this browser only &mdash; use <b>Backup</b> to move it to another device. Auto-refresh runs on open and at 9 AM if left open.
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal"><div class="mh" id="modalTitle">Add holding</div><div class="mb" id="modalBody"></div>
+    <div class="mf"><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="saveBtn" onclick="saveForm()">Save</button></div>
+  </div>
+</div>
+
+<script>
+const CATS=[
+  {key:'mutual_fund',label:'Mutual Fund',color:'var(--c1)',kind:'auto',src:'mf',f1:'Fund name',f2:'Quantity',f3:'NAV'},
+  {key:'shares',label:'Shares',color:'var(--c2)',kind:'auto',src:'stock',f1:'Share name',f2:'Quantity',f3:'Price'},
+  {key:'sif',label:'SIF',color:'var(--c3)',kind:'auto',src:'mf',f1:'Fund name',f2:'Quantity',f3:'NAV'},
+  {key:'fd',label:'FD',color:'var(--c4)',kind:'flat',f1:'Bank name',f2:'Quantity',f3:'Value'},
+  {key:'nps',label:'NPS',color:'var(--c5)',kind:'auto',src:'nps',f1:'Scheme name',f2:'Quantity',f3:'NAV'},
+  {key:'savings',label:'Savings',color:'var(--c6)',kind:'flat',f1:'Name',f2:'Quantity',f3:'Value'},
+  {key:'insurance',label:'Insurance SV',color:'var(--c7)',kind:'flat',f1:'Name',f2:'Quantity',f3:'Value'},
+  {key:'gift',label:'GIFT City Funds',color:'var(--c8)',kind:'gift',f1:'Fund name',f2:'Quantity',f3:'NAV (USD)'},
+  {key:'others',label:'Others',color:'var(--c9)',kind:'flat',f1:'Name',f2:'Quantity',f3:'Value'},
+];
+const catOf=k=>CATS.find(c=>c.key===k);
+
+let holdings=load('nw_holdings_v1',[]);
+let meta=load('nw_meta_v1',{lastRefreshDay:null,lastRefreshAt:null,usdinr:null,usdinrDate:null});
+let npsSchemes=null,editing=null,formCat='mutual_fund',picked=null;
+holdings.forEach(h=>{if(h.qty==null&&h.units!=null)h.qty=h.units;});
+
+function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v==null?d:v;}catch(e){return d;}}
+function save(){localStorage.setItem('nw_holdings_v1',JSON.stringify(holdings));localStorage.setItem('nw_meta_v1',JSON.stringify(meta));}
+
+const fmtINR=n=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(n||0);
+const fmtN=n=>new Intl.NumberFormat('en-IN',{maximumFractionDigits:4}).format(n||0);
+function shortINR(n){n=n||0;if(n>=1e7)return '\u20B9'+(n/1e7).toFixed(2)+' Cr';if(n>=1e5)return '\u20B9'+(n/1e5).toFixed(2)+' L';return fmtINR(n);}
+function valueOf(h){const c=catOf(h.cat);if(c.kind==='flat')return +h.amount||0;if(c.kind==='gift')return (+h.qty||0)*(+h.navUSD||0)*(+meta.usdinr||0);return (+h.qty||0)*(+h.nav||0);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function esc(s){return (s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function fmtUnixDate(sec){if(!sec)return '';const d=new Date(sec*1000),p=n=>String(n).padStart(2,'0');return p(d.getDate())+'-'+p(d.getMonth()+1)+'-'+d.getFullYear();}
+
+const PROXIES=[u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://corsproxy.io/?url='+encodeURIComponent(u)];
+async function fetchTextViaProxy(url){for(const p of PROXIES){try{const r=await fetch(p(url),{cache:'no-store'});if(!r.ok)continue;const t=await r.text();if(t&&t.length>40)return t;}catch(e){}}throw new Error('relay failed');}
+async function fetchJSONviaProxy(url){const t=await fetchTextViaProxy(url);return JSON.parse(t);}
+
+/* extract "$<num> as of <date>" from a GIFT fund-house NAV page */
+function parseGiftNav(html){
+  const text=html.replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
+  const ci=text.search(/current\s*nav/i);
+  const scope=ci>=0?text.slice(ci,ci+180):text;
+  let m=scope.match(/\$\s*([0-9]+(?:\.[0-9]+)?)/)||text.match(/\$\s*([0-9]+(?:\.[0-9]+)?)/);
+  if(!m)return null;
+  let d=scope.match(/as of\s*([A-Za-z.]{3,12}\s+\d{1,2},?\s*\d{2,4})/i)||text.match(/as of\s*([A-Za-z.]{3,12}\s+\d{1,2},?\s*\d{2,4})/i);
+  return {nav:parseFloat(m[1]),date:d?d[1].trim():''};
+}
+
+function show(v){document.getElementById('dash').style.display=v==='dash'?'':'none';document.getElementById('set').style.display=v==='set'?'':'none';document.getElementById('tabDash').classList.toggle('active',v==='dash');document.getElementById('tabSet').classList.toggle('active',v==='set');if(v==='set')renderSettings();window.scrollTo(0,0);}
+
+function renderDash(){
+  const total=holdings.reduce((s,h)=>s+valueOf(h),0);
+  document.getElementById('heroTotal').textContent=shortINR(total);
+  document.getElementById('heroSub').textContent='Across '+holdings.length+' holding'+(holdings.length===1?'':'s')+'  \u00b7  '+fmtINR(total);
+  const anyErr=holdings.some(h=>h.navError),hasGift=holdings.some(h=>h.cat==='gift');
+  let line=meta.lastRefreshAt?('Last updated '+new Date(meta.lastRefreshAt).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})):'Not yet refreshed &mdash; tap Refresh.';
+  if(hasGift&&meta.usdinr)line+=' &nbsp;\u00b7&nbsp; USD\u2013INR '+(+meta.usdinr).toFixed(2);
+  if(anyErr)line+=' &nbsp;<span class="warn">&#9888; some auto values pending &mdash; showing last known</span>';
+  document.getElementById('updatedLine').innerHTML=line;
+  const byCat={};holdings.forEach(h=>byCat[h.cat]=(byCat[h.cat]||0)+valueOf(h));
+  const cats=CATS.filter(c=>byCat[c.key]>0).map(c=>({...c,val:byCat[c.key]})).sort((a,b)=>b.val-a.val);
+  document.getElementById('donut').innerHTML=donutSVG(cats,total);
+  document.getElementById('legend').innerHTML=cats.length?cats.map(c=>'<div class="leg"><span class="sw" style="background:'+c.color+'"></span><span class="nm">'+c.label+'</span><span class="vl">'+shortINR(c.val)+'</span><span class="pc">'+(total?Math.round(c.val/total*100):0)+'%</span></div>').join(''):'<div class="empty">Add holdings to see allocation.</div>';
+  document.getElementById('catlist').innerHTML=cats.length?cats.map(c=>{const n=holdings.filter(h=>h.cat===c.key).length;return '<div class="catrow"><span class="sw" style="background:'+c.color+'"></span><div><div class="nm">'+c.label+'</div><div class="ct">'+n+' item'+(n===1?'':'s')+'</div></div><span class="vl">'+fmtINR(c.val)+'</span><span class="pc">'+(total?Math.round(c.val/total*100):0)+'%</span></div>';}).join(''):'<div class="empty">Nothing yet.</div>';
+  const rows=[...holdings].sort((a,b)=>valueOf(b)-valueOf(a));
+  document.getElementById('dashEmpty').style.display=rows.length?'none':'';
+  document.getElementById('holdRows').innerHTML=rows.map(h=>{
+    const c=catOf(h.cat),qtyCell=fmtN(h.qty||0);let navCell,upd;
+    if(c.kind==='flat'){navCell='\u2014';upd='<span class="navdt">manual</span>';}
+    else if(c.kind==='gift'){navCell='$'+fmtN(h.navUSD||0);upd=!meta.usdinr?'<span class="navdt err">&#9888; rate pending</span>':(h.navError&&h.navUrl?'<span class="navdt err">&#9888; NAV fetch failed</span>':'<span class="navdt">'+((h.navAuto&&h.navDate)?(h.navDate+' '):'')+'@ \u20B9'+(+meta.usdinr).toFixed(2)+'</span>');}
+    else{navCell=fmtN(h.nav||0);upd=h.navError?('<span class="navdt err">&#9888; '+(h.navDate||'\u2014')+'</span>'):'<span class="navdt">'+(h.navDate||'\u2014')+'</span>';}
+    const auto=(c.kind==='auto'||(c.kind==='gift'&&h.navUrl));
+    return '<tr><td><b>'+esc(h.name)+'</b></td><td><span class="tag '+(auto?'':'man')+'">'+c.label+'</span></td><td class="r">'+qtyCell+'</td><td class="r">'+navCell+'</td><td class="r"><b>'+fmtINR(valueOf(h))+'</b></td><td>'+upd+'</td></tr>';
+  }).join('');
+}
+function donutSVG(cats,total){const size=150,r=58,cx=75,cy=75,sw=22,C=2*Math.PI*r;if(!total)return '<svg width="'+size+'" height="'+size+'"><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#eceef3" stroke-width="'+sw+'"/></svg>';let off=0,segs='';cats.forEach(c=>{const len=(c.val/total)*C;segs+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+c.color+'" stroke-width="'+sw+'" stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-off)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';off+=len;});return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 150 150"><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#eceef3" stroke-width="'+sw+'"/>'+segs+'<text x="75" y="71" text-anchor="middle" font-size="11" fill="#6b7280">Total</text><text x="75" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#13151a">'+shortINR(total)+'</text></svg>';}
+
+function renderSettings(){
+  document.getElementById('catCards').innerHTML=CATS.map(c=>{
+    const items=holdings.filter(h=>h.cat===c.key),tot=items.reduce((s,h)=>s+valueOf(h),0),auto=(c.kind==='auto');
+    const body=items.length?items.map(h=>{let sub;
+      if(c.kind==='flat')sub='<small>Qty '+fmtN(h.qty||0)+' \u00b7 Value '+fmtINR(h.amount)+'</small>';
+      else if(c.kind==='gift')sub='<small>'+fmtN(h.qty||0)+' \u00d7 $'+fmtN(h.navUSD||0)+' \u00d7 \u20B9'+(meta.usdinr?(+meta.usdinr).toFixed(2):'?')+(h.navUrl?' \u00b7 auto':'')+'</small>';
+      else sub='<small>'+fmtN(h.qty||0)+' \u00d7 '+fmtN(h.nav||0)+(h.navDate?(' \u00b7 '+h.navDate):'')+'</small>';
+      return '<div class="hrow"><div class="hn">'+esc(h.name)+sub+'</div><div class="hv">'+fmtINR(valueOf(h))+'</div><button class="iconbtn" title="Edit" onclick="openForm(\''+h.id+'\')">&#9998;</button><button class="iconbtn" title="Delete" onclick="delHolding(\''+h.id+'\')">&#128465;</button></div>';
+    }).join(''):'<div class="empty">No '+c.label.toLowerCase()+' added.</div>';
+    return '<div class="catcard"><div class="head" onclick="openForm(null,\''+c.key+'\')"><span class="sw" style="background:'+c.color+'"></span><span class="nm">'+c.label+'</span><span class="src '+(auto?'auto':'')+'">'+(auto?'auto':(c.kind==='gift'?'auto FX':'manual'))+'</span><span class="tot">'+(items.length?fmtINR(tot):'')+'</span></div><div class="body">'+body+'</div></div>';
+  }).join('');
+}
+
+function openForm(id,presetCat){editing=id?holdings.find(h=>h.id===id):null;picked=null;formCat=editing?editing.cat:(presetCat||'mutual_fund');document.getElementById('modalTitle').textContent=editing?'Edit holding':'Add holding';buildForm();document.getElementById('overlay').classList.add('show');}
+function closeForm(){document.getElementById('overlay').classList.remove('show');}
+
+function buildForm(){
+  const c=catOf(formCat);
+  const catSel='<label class="fld">Category<select id="f_cat" '+(editing?'disabled':'')+' onchange="formCat=this.value;buildForm()">'+CATS.map(x=>'<option value="'+x.key+'" '+(x.key===formCat?'selected':'')+'>'+x.label+'</option>').join('')+'</select></label>';
+  let f1='',f3='',extra='';
+  const f2='<label class="fld">'+c.f2+'<input id="f_qty" type="number" inputmode="decimal" placeholder="0" value="'+(editing&&editing.qty!=null?editing.qty:'')+'"></label>';
+  if(c.kind==='flat'){
+    f1='<label class="fld">'+c.f1+'<input id="f_name" placeholder="'+(c.key==='fd'?'e.g. HDFC Bank FD':c.key==='savings'?'e.g. SBI Savings A/c':c.key==='insurance'?'e.g. LIC Jeevan Anand':'e.g. Gold / EPF')+'" value="'+(editing?esc(editing.name):'')+'"></label>';
+    f3='<label class="fld">'+c.f3+' (\u20B9)<input id="f_amount" type="number" inputmode="decimal" placeholder="0" value="'+(editing?editing.amount:'')+'"></label>';
+    extra='<div class="hint">Dashboard shows this Value exactly as entered (no calculation).</div>';
+  }else if(c.kind==='gift'){
+    f1='<label class="fld">'+c.f1+'<input id="f_name" placeholder="e.g. DSP Global Equity Fund" value="'+(editing?esc(editing.name):'')+'"></label>';
+    f3='<label class="fld">'+c.f3+(editing&&editing.navUrl?' (auto)':'')+'<input id="f_navusd" type="number" inputmode="decimal" placeholder="0" value="'+(editing&&editing.navUSD!=null?editing.navUSD:'')+'"></label>'+
+       '<label class="fld">Auto-NAV page URL (optional)<input id="f_navurl" placeholder="e.g. https://giftcity.dspim.com/nav" value="'+(editing&&editing.navUrl?esc(editing.navUrl):'')+'"></label>';
+    extra='<div class="note">Enter NAV in <b>USD</b>. If you paste the fund-house NAV page URL, the app reads the latest USD NAV from it automatically each refresh (best-effort \u2014 works when the page shows the value as text, e.g. DSP). Value = Qty \u00d7 NAV(USD) \u00d7 live USD\u2013INR'+(meta.usdinr?(' (now \u20B9'+(+meta.usdinr).toFixed(2)+')'):'')+', in \u20B9.</div>';
+  }else if(c.src==='stock'){
+    const cur=editing?'<div class="picked">&#10003; '+esc(editing.name)+(editing.symbol?(' ('+esc(editing.symbol)+')'):'')+'</div>':'';
+    f1='<label class="fld">'+c.f1+'<div class="suggest"><div class="nrow"><input id="f_search" placeholder="e.g. Reliance, TCS, INFY" oninput="stockSearch(this.value)" autocomplete="off"><select id="f_exch"><option value="NS">NSE</option><option value="BO">BSE</option></select></div><div class="suggbox" id="stbox" style="display:none"></div></div></label><div id="pickedRow">'+cur+'</div>';
+    f3='<label class="fld">'+c.f3+' (auto)<input id="f_nav_ro" disabled value="'+(editing&&editing.nav?fmtN(editing.nav):'')+'" placeholder="Fetched automatically"></label>';
+    extra='<div class="hint">Pick from suggestions for the right symbol, or type a ticker and choose the exchange. Price updates daily.</div>';
+  }else{ // mf / sif / nps
+    const cur=editing?'<div class="picked">&#10003; Linked: '+esc(editing.name)+'</div>':'';
+    const oninput=c.src==='nps'?'npsSearch(this.value)':'mfSearch(this.value)',boxid=c.src==='nps'?'npsbox':'mfbox';
+    const ph=c.src==='nps'?'e.g. HDFC Pension Fund Scheme E Tier I':(formCat==='sif'?'e.g. Quant SIF / SBI Magnum SIF':'e.g. Parag Parikh Flexi Cap Direct Growth');
+    f1='<label class="fld">'+c.f1+' (search)<div class="suggest"><input id="f_search" placeholder="'+ph+'" oninput="'+oninput+'" autocomplete="off"><div class="suggbox" id="'+boxid+'" style="display:none"></div></div></label><div id="pickedRow">'+cur+'</div>';
+    f3='<label class="fld">'+c.f3+' (auto)<input id="f_nav_ro" disabled value="'+(editing&&editing.nav?fmtN(editing.nav):'')+'" placeholder="Fetched automatically"></label>';
+    extra='<div class="hint">NAV updates daily automatically. Pick the exact plan.</div>';
+  }
+  document.getElementById('modalBody').innerHTML=catSel+f1+f2+f3+extra;
+  if(formCat==='shares'&&editing&&editing.exchange){const s=document.getElementById('f_exch');if(s)s.value=editing.exchange;}
+  if(formCat==='nps'&&!editing)loadNpsSchemes();
+}
+
+let mfTimer=null;
+function mfSearch(q){const box=document.getElementById('mfbox');clearTimeout(mfTimer);if(!q||q.trim().length<3){box.style.display='none';return;}mfTimer=setTimeout(async()=>{try{const r=await fetch('https://api.mfapi.in/mf/search?q='+encodeURIComponent(q.trim()));const list=await r.json();box.innerHTML=(list||[]).slice(0,25).map(m=>'<div onclick=\'pickMF('+m.schemeCode+','+JSON.stringify(m.schemeName)+')\'>'+esc(m.schemeName)+'</div>').join('')||'<div>No match</div>';box.style.display='block';}catch(e){box.innerHTML='<div>Search failed</div>';box.style.display='block';}},280);}
+function pickMF(code,name){picked={schemeCode:String(code),name};document.getElementById('mfbox').style.display='none';document.getElementById('f_search').value=name;document.getElementById('pickedRow').innerHTML='<div class="picked">&#10003; Selected: '+esc(name)+'</div>';}
+async function loadNpsSchemes(){if(npsSchemes)return;try{const r=await fetch('https://npsnav.in/api/schemes');const j=await r.json();npsSchemes=(j.data||[]).map(a=>({code:a[0],name:a[1]}));}catch(e){npsSchemes=[];}}
+function npsSearch(q){const box=document.getElementById('npsbox');if(!npsSchemes){box.innerHTML='<div>Loading&hellip;</div>';box.style.display='block';loadNpsSchemes().then(()=>npsSearch(q));return;}q=(q||'').trim().toLowerCase();if(q.length<2){box.style.display='none';return;}const res=npsSchemes.filter(s=>s.name.toLowerCase().includes(q)).slice(0,25);box.innerHTML=res.map(s=>'<div onclick=\'pickNPS('+JSON.stringify(s.code)+','+JSON.stringify(s.name)+')\'>'+esc(s.name)+'</div>').join('')||'<div>No match</div>';box.style.display='block';}
+function pickNPS(code,name){picked={schemeCode:code,name};document.getElementById('npsbox').style.display='none';document.getElementById('f_search').value=name;document.getElementById('pickedRow').innerHTML='<div class="picked">&#10003; Selected: '+esc(name)+'</div>';}
+let stTimer=null;
+function stockSearch(q){const box=document.getElementById('stbox');clearTimeout(stTimer);if(!q||q.trim().length<2){box.style.display='none';return;}box.innerHTML='<div>Searching&hellip;</div>';box.style.display='block';stTimer=setTimeout(async()=>{try{const j=await fetchJSONviaProxy('https://query1.finance.yahoo.com/v1/finance/search?q='+encodeURIComponent(q.trim())+'&quotesCount=20&newsCount=0');const res=(j.quotes||[]).filter(x=>x.symbol&&(x.symbol.endsWith('.NS')||x.symbol.endsWith('.BO')));box.innerHTML=res.length?res.slice(0,20).map(x=>{const nm=(x.shortname||x.longname||x.symbol),ex=x.symbol.endsWith('.BO')?'BO':'NS';return '<div onclick=\'pickStock('+JSON.stringify(x.symbol)+','+JSON.stringify(nm)+','+JSON.stringify(ex)+')\'>'+esc(nm)+' &middot; '+esc(x.symbol)+'</div>';}).join(''):'<div>No NSE/BSE match &mdash; type ticker + pick exchange</div>';}catch(e){box.innerHTML='<div>Relay busy &mdash; type ticker + pick exchange</div>';}box.style.display='block';},350);}
+function pickStock(symbol,name,exch){picked={symbol,name,exchange:exch};document.getElementById('stbox').style.display='none';document.getElementById('f_search').value=name;const sel=document.getElementById('f_exch');if(sel)sel.value=exch;document.getElementById('pickedRow').innerHTML='<div class="picked">&#10003; '+esc(name)+' ('+esc(symbol)+')</div>';}
+
+function saveForm(){
+  const c=catOf(formCat);let h=editing?{...editing}:{id:uid(),cat:formCat};h.cat=formCat;h.qty=+document.getElementById('f_qty').value||0;
+  if(c.kind==='flat'){h.name=(document.getElementById('f_name').value||'').trim();h.amount=+document.getElementById('f_amount').value||0;if(!h.name){alert('Please enter a name.');return;}}
+  else if(c.kind==='gift'){h.name=(document.getElementById('f_name').value||'').trim();h.navUSD=+document.getElementById('f_navusd').value||0;h.navUrl=(document.getElementById('f_navurl').value||'').trim();if(!h.name){alert('Please enter a fund name.');return;}}
+  else if(c.src==='stock'){if(picked){h.symbol=picked.symbol;h.name=picked.name;h.exchange=picked.exchange;}else{const raw=(document.getElementById('f_search').value||'').trim().toUpperCase(),ex=document.getElementById('f_exch').value;if(!raw){alert('Search and pick a stock, or type a ticker.');return;}h.symbol=/\.(NS|BO)$/.test(raw)?raw:raw+'.'+ex;h.exchange=ex;h.name=editing?editing.name:raw.replace(/\.(NS|BO)$/,'');}if(h.nav===undefined)h.nav=0;}
+  else{if(picked){h.schemeCode=picked.schemeCode;h.name=picked.name;}if(!h.schemeCode||!h.name){alert('Please search and select a scheme/fund first.');return;}if(h.nav===undefined)h.nav=0;}
+  if(editing)holdings=holdings.map(x=>x.id===h.id?h:x);else holdings.push(h);
+  save();closeForm();renderSettings();renderDash();
+  if(c.kind==='auto'||c.kind==='gift')refreshAll(false);
+}
+function delHolding(id){const h=holdings.find(x=>x.id===id);if(!confirm('Delete "'+(h?h.name:'this')+'"?'))return;holdings=holdings.filter(x=>x.id!==id);save();renderSettings();renderDash();}
+
+/* backup / restore */
+function backupData(){const blob=new Blob([JSON.stringify({holdings,meta,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='networth-backup.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function restoreData(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(Array.isArray(j.holdings))holdings=j.holdings;if(j.meta)meta=Object.assign(meta,j.meta);holdings.forEach(h=>{if(h.qty==null&&h.units!=null)h.qty=h.units;});save();renderSettings();renderDash();alert('Restored '+holdings.length+' holdings.');}catch(err){alert('That doesn\u2019t look like a valid backup file.');}};r.readAsText(f);e.target.value='';}
+
+let refreshing=false;
+async function refreshAll(manual){
+  if(refreshing)return;
+  const mf=holdings.filter(h=>(h.cat==='mutual_fund'||h.cat==='sif')&&h.schemeCode);
+  const nps=holdings.filter(h=>h.cat==='nps'&&h.schemeCode);
+  const stock=holdings.filter(h=>h.cat==='shares'&&h.symbol);
+  const gift=holdings.filter(h=>h.cat==='gift');
+  if(!mf.length&&!nps.length&&!stock.length&&!gift.length){if(manual){meta.lastRefreshAt=Date.now();meta.lastRefreshDay=new Date().toDateString();save();renderDash();}return;}
+  refreshing=true;const ic=document.getElementById('refIcon');ic.classList.add('spin');
+  if(gift.length){
+    let ok=false;
+    try{const r=await fetch('https://open.er-api.com/v6/latest/USD',{cache:'no-store'});const j=await r.json();if(j&&j.rates&&j.rates.INR){meta.usdinr=j.rates.INR;meta.usdinrDate=(j.time_last_update_utc||'').slice(0,16);ok=true;}}catch(e){}
+    if(!ok){try{const r=await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=INR');const j=await r.json();if(j&&j.rates&&j.rates.INR){meta.usdinr=j.rates.INR;meta.usdinrDate=j.date;ok=true;}}catch(e){}}
+    await Promise.all(gift.map(async h=>{
+      if(h.navUrl){try{const html=await fetchTextViaProxy(h.navUrl);const p=parseGiftNav(html);if(p&&p.nav){h.navUSD=p.nav;h.navDate=p.date||new Date().toLocaleDateString('en-GB');h.navAuto=true;h.navError=!meta.usdinr;}else{h.navError=true;}}catch(e){h.navError=true;}}
+      else{h.navAuto=false;h.navError=!meta.usdinr;}
+    }));
+  }
+  if(nps.length){try{const r=await fetch('https://npsnav.in/api/latest-min',{cache:'no-store'});const j=await r.json();const map={};(j.data||[]).forEach(a=>map[a[0]]=a[1]);const dt=(j.metadata||{}).lastUpdated||'';nps.forEach(h=>{if(map[h.schemeCode]!=null){h.nav=+map[h.schemeCode];h.navDate=dt;h.navError=false;}else h.navError=true;});}catch(e){nps.forEach(h=>h.navError=true);}}
+  await Promise.all(mf.map(async h=>{try{const r=await fetch('https://api.mfapi.in/mf/'+h.schemeCode+'/latest',{cache:'no-store'});const j=await r.json();const d=(j.data&&j.data[0])||null;if(d){h.nav=+d.nav;h.navDate=d.date;h.navError=false;}else h.navError=true;}catch(e){h.navError=true;}}));
+  await Promise.all(stock.map(async h=>{try{const j=await fetchJSONviaProxy('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(h.symbol)+'?range=1d&interval=1d');const res=j.chart&&j.chart.result&&j.chart.result[0];const m=res&&res.meta;const px=m&&(m.regularMarketPrice!=null?m.regularMarketPrice:m.chartPreviousClose);if(px!=null){h.nav=+px;h.navDate=fmtUnixDate(m.regularMarketTime)||new Date().toLocaleDateString('en-GB');h.navError=false;}else h.navError=true;}catch(e){h.navError=true;}}));
+  meta.lastRefreshAt=Date.now();meta.lastRefreshDay=new Date().toDateString();
+  save();renderDash();if(document.getElementById('set').style.display!=='none')renderSettings();
+  ic.classList.remove('spin');refreshing=false;
+}
+function maybeAuto(){const today=new Date().toDateString(),h=new Date().getHours();const has=holdings.some(x=>{const c=catOf(x.cat);return (c.kind==='auto'&&(x.schemeCode||x.symbol))||c.kind==='gift';});if(!has)return;if(meta.lastRefreshDay!==today&&h>=9)refreshAll(false);else if(!meta.lastRefreshAt)refreshAll(false);}
+setInterval(()=>{const n=new Date();if(n.getHours()===9&&n.getMinutes()<5&&meta.lastRefreshDay!==n.toDateString())refreshAll(false);},60000);
+document.addEventListener('click',e=>{if(!e.target.closest('.suggest')){['mfbox','npsbox','stbox'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});}});
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeForm();});
+renderDash();maybeAuto();
+</script>
+</body>
+</html>
